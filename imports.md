@@ -21,7 +21,11 @@
 `from kafka import KafkaConsumer`<br>
 `from multiprocessing import Process, freeze_support`<br>
 `from FullAnalysis import analyse`<br>
+`from sqlalchemy import create_engine`<br>
+`from sqlalchemy.orm import sessionmaker`<br>
+`from flask_login import UserMixin`<br>
 
 # pip command:
 ---
-`pip install pandas numpy matplotlib scikit-learn tensorflow xgboost seaborn kafka-python`
+`pip install pandas numpy matplotlib scikit-learn tensorflow keras xgboost seaborn kafka-python sqlalchemy Flask-Login
+`
