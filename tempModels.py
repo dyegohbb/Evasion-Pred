@@ -1,36 +1,10 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum, Float, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from flask_login import UserMixin
 from enum import Enum as PythonEnum
 
 Base = declarative_base()
-
-class StudentData(Base):
-    __tablename__ = 'student_data'
-
-    id = Column(Integer, primary_key=True)
-    created_at = Column(DateTime, nullable=False)
-    name = Column(String, nullable=False)
-    studentid = Column(String, nullable=False, unique=True)
-    #Features:
-    descricao_modalidade_curso = Column(String, nullable=False)
-    descricao_cota = Column(String, nullable=False)
-    nivel_ensino = Column(String, nullable=False)
-    descricao_situacao_matricula = Column(String, nullable=False)
-    descricao_estado_civil = Column(String, nullable=False)
-    descricao_turno = Column(String, nullable=False)
-    descricao_naturalidade = Column(String, nullable=False)
-    coeficiente_rendimento = Column(String, nullable=False)
-    descricao_cor = Column(String, nullable=False)
-    sexo = Column(String, nullable=False)
-    descricao_curso = Column(String, nullable=False)
-    percentual_frequencia = Column(String, nullable=False)
-    descricao_tipo_escola_origem = Column(String, nullable=False)
-    descricao_renda_per_capita = Column(String, nullable=False)
-
-    csv_import_history_id = Column(Integer, ForeignKey('csv_import_history.id'))
-    csv_import_history = relationship("CsvImportHistory", back_populates="student_data")
 
 class StudentDataTemp(Base):
     __tablename__ = 'student_data_temp'
@@ -55,16 +29,12 @@ class StudentDataTemp(Base):
     descricao_tipo_escola_origem = Column(String, nullable=False)
     descricao_renda_per_capita = Column(String, nullable=False)
 
-class AnalysisResultHistory(Base):
-    __tablename__ = 'analysis_result_history'
+    csv_import_history_temp_id = Column(Integer, ForeignKey('csv_import_history_temp.id'))
+    csv_import_history_temp = relationship("CsvImportHistoryTemp", back_populates="student_data_temp")
 
-    id = Column(Integer, primary_key=True)
-    created_at = Column(DateTime, nullable=False)
-    studentid = Column(String, nullable=False)
-    evaded = Column(Boolean, nullable=False)
 
-class CsvImportHistory(Base):
-    __tablename__ = 'csv_import_history'
+class CsvImportHistoryTemp(Base):
+    __tablename__ = 'csv_import_history_temp'
 
     id = Column(Integer, primary_key=True)
     created_at = Column(DateTime, nullable=False)
@@ -73,7 +43,7 @@ class CsvImportHistory(Base):
     file_size = Column(Float, nullable=False)
     row_count = Column(Integer, nullable=False, default=0)
 
-    student_data = relationship("StudentData", cascade="all, delete", back_populates="csv_import_history")
+    student_data_temp = relationship("StudentDataTemp", cascade="all, delete", back_populates="csv_import_history_temp")
 
     user_id = Column(Integer, ForeignKey('user.id'))
     user = relationship("User", backref="csv_import_histories")
@@ -100,8 +70,3 @@ class SituationEnum(PythonEnum):
     RUNNING = 'RUNNING'
     SUCCESS = 'SUCCESS'
     ERROR = 'ERROR'
-
-class TaskOperationEnum:
-    IA_TRAIN = "IA_TRAIN"
-    CUSTOMIZED_ANALYSIS = "CUSTOMIZED_ANALYSIS"
-    FULL_ANALYSIS = "FULL_ANALYSIS"

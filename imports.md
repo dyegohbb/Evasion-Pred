@@ -24,8 +24,9 @@
 `from sqlalchemy import create_engine`<br>
 `from sqlalchemy.orm import sessionmaker`<br>
 `from flask_login import UserMixin`<br>
+`import joblib`<br>
 
 # pip command:
 ---
-`pip install pandas numpy matplotlib scikit-learn tensorflow keras xgboost seaborn kafka-python sqlalchemy Flask-Login
+`pip install pandas numpy matplotlib scikit-learn tensorflow keras xgboost seaborn kafka-python sqlalchemy Flask-Login joblib
 `
