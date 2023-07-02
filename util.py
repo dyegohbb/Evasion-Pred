@@ -286,15 +286,18 @@ def fullTrain():
     y = pd.DataFrame(qData["target"], index=qData.index)
     studentId = pd.DataFrame(qData["studentid"], index=qData.index)
 
+    # Treinamento do modelo com os melhores parâmetros
     params = {'colsample_bytree': 1, 'gamma': 4, 'learning_rate': 0.1, 'max_depth': 5, 'n_estimators': 100, 'subsample': 1, "min_child_weight": 5}
-
     trainXGB(X, y, params)
-    predicoes = predictXGB(X)
 
+    # Predição dos dados para salvar no banco de dados
+    predicoes = predictXGB(X)
     studentId['evaded'] = pd.Series(predicoes, index=studentId.index)
 
+    # Salvar predições no banco de dados
     savePredictions(studentId)
-    print(studentId.head())
+    print("---------------------------------")
+    print("Processo finalizado com sucesso!")
 
 def savePredictions(studentid):
     # Obter a data e hora atual

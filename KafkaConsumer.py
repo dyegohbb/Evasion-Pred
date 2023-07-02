@@ -11,13 +11,13 @@ topics = ['full_analysis', 'topic2', 'topic3']
 
 def consume_topic(topic):
     consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers)
-
+    print("Iniciando consumidor para o tópico: " + topic)
     try:
         for message in consumer:
             message_value = message.value.decode('utf-8')
             message_object = json.loads(message_value)
             operation = message_object['operation']
-            
+
             if(message.topic == "full_analysis" and operation == TaskOperationEnum.FULL_ANALYSIS):
                 print("Eu consumi uma operação full_analysis")
                 fullTrain()
@@ -38,6 +38,7 @@ if __name__ == '__main__':
 
     processes = []
     for topic in topics:
+        print("Iniciando processo para o tópico: " + topic)
         p = Process(target=consume_topic, args=(topic,))
         processes.append(p)
         p.start()
