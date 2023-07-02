@@ -15,13 +15,14 @@ import matplotlib.pyplot as plt
 import joblib
 import os
 from datetime import datetime
+from taskDAO import updateProgress, updateSituationToFinished, updateSituationToFailed
 
 # Configuração do banco de dados
-db_host = 'localhost'  # substitua pelo valor correto
-db_port = '3306'  # substitua pelo valor correto
-db_name = 'evasionwatch'  # substitua pelo valor correto
-db_username = 'root'  # substitua pelo valor correto
-db_password = 'QweBHU*'  # substitua pelo valor correto
+db_host = 'localhost'
+db_port = '3306'
+db_name = 'evasionwatch'
+db_username = 'root'
+db_password = 'QweBHU*'
 
 db_url = f'mysql+pymysql://{db_username}:{db_password}@{db_host}:{db_port}/{db_name}'
 engine = create_engine(db_url)
@@ -269,46 +270,65 @@ def encodingDataWithIndexs(qData):
     qData['descricao_renda_per_capita'] = qData['descricao_renda_per_capita'].astype(int)
     return qData
 
-def fullTrain():
-    qData = getFeaturesDataFrame()
-    qData = removeInvalidStudents(qData)
-    qData = encodingDataWithIndexs(qData)
-    # Iniciando separação dos dados para predição
+def fullTrain(taskUUID):
 
-    # Preencher NaN com -1
-    qData['percentual_frequencia'] = qData['percentual_frequencia'].fillna(-1)
+    try:
+        qData = getFeaturesDataFrame()
+        updateProgress(taskUUID, 30)
+        qData = removeInvalidStudents(qData)
+        updateProgress(taskUUID, 35)
+        qData = encodingDataWithIndexs(qData)
+        updateProgress(taskUUID, 40)
 
-    # Remove os elementos target
-    qData = qData.drop("descricao_situacao_matricula", axis=1)
+        # Iniciando separação dos dados para predição
 
-    # Monta o X e Y responsáveis pelo treinamento
-    X = pd.DataFrame(qData.drop(["target", "studentid"], axis=1), index=qData.index)
-    y = pd.DataFrame(qData["target"], index=qData.index)
-    studentId = pd.DataFrame(qData["studentid"], index=qData.index)
+        # Preencher NaN com -1
+        qData['percentual_frequencia'] = qData['percentual_frequencia'].fillna(-1)
+        updateProgress(taskUUID, 45)
+        # Remove os elementos target
+        qData = qData.drop("descricao_situacao_matricula", axis=1)
+        updateProgress(taskUUID, 50)
 
-    # Treinamento do modelo com os melhores parâmetros
-    params = {'colsample_bytree': 1, 'gamma': 4, 'learning_rate': 0.1, 'max_depth': 5, 'n_estimators': 100, 'subsample': 1, "min_child_weight": 5}
-    trainXGB(X, y, params)
+        # Monta o X e Y responsáveis pelo treinamento
+        X = pd.DataFrame(qData.drop(["target", "studentid"], axis=1), index=qData.index)
+        updateProgress(taskUUID, 55)
+        y = pd.DataFrame(qData["target"], index=qData.index)
+        updateProgress(taskUUID, 60)
+        studentId = pd.DataFrame(qData["studentid"], index=qData.index)
+        updateProgress(taskUUID, 65)
 
-    # Predição dos dados para salvar no banco de dados
-    predicoes = predictXGB(X)
-    studentId['evaded'] = pd.Series(predicoes, index=studentId.index)
+        # Treinamento do modelo com os melhores parâmetros
+        params = {'colsample_bytree': 1, 'gamma': 4, 'learning_rate': 0.1, 'max_depth': 5, 'n_estimators': 100, 'subsample': 1, "min_child_weight": 5}
+        trainXGB(X, y, params)
+        updateProgress(taskUUID, 70)
 
-    # Salvar predições no banco de dados
-    savePredictions(studentId)
-    print("---------------------------------")
-    print("Processo finalizado com sucesso!")
+        # Predição dos dados para salvar no banco de dados
+        predicoes = predictXGB(X)
+        updateProgress(taskUUID, 80)
+        studentId['evaded'] = pd.Series(predicoes, index=studentId.index)
+        updateProgress(taskUUID, 90)
+        # Salvar predições no banco de dados
+        savePredictions(studentId)
+        updateSituationToFinished(taskUUID)
+        print("Processo finalizado com sucesso!")
+
+    except Exception as e:
+        updateSituationToFailed(taskUUID,e)
+        print("Processo finalizado com ERRO. Verifique o log:")
+        print(e)
+
+    finally:
+        session.close()
+        print("---------------------------------")
 
 def savePredictions(studentid):
     # Obter a data e hora atual
     now = datetime.now()
 
-    # Iterar sobre os valores de studentid e predicoes_bool e salvar no banco de dados
     for sid, evaded in zip(studentid["studentid"], studentid["evaded"]):
         analysis_result = AnalysisResultHistory(created_at=now, studentid=sid, evaded=evaded)
         session.add(analysis_result)
 
-    # Commit das alterações no banco de dados
     session.commit()
 
 def customizedTrain():

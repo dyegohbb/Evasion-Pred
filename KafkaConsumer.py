@@ -20,7 +20,7 @@ def consume_topic(topic):
 
             if(message.topic == "full_analysis" and operation == TaskOperationEnum.FULL_ANALYSIS):
                 print("Eu consumi uma operação full_analysis")
-                fullTrain()
+                fullTrain(message_object['uuid'])
             elif(message.topic == "customized_analysis" and operation == TaskOperationEnum.CUSTOMIZED_ANALYSIS):
                 print("Eu consumi uma operação customized_analysis")
             elif(message.topic == "ia_train" and operation == TaskOperationEnum.IA_TRAIN):
@@ -30,6 +30,7 @@ def consume_topic(topic):
             
     except KeyboardInterrupt:
         pass
+
     finally:
         consumer.close()
 
