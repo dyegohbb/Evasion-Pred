@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum, Float, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum, Float, Boolean, Double
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from flask_login import UserMixin
@@ -62,6 +62,18 @@ class AnalysisResultHistory(Base):
     created_at = Column(DateTime, nullable=False)
     studentid = Column(String, nullable=False)
     evaded = Column(Boolean, nullable=False)
+
+class TrainingHistory(Base):
+    __tablename__ = 'training_history'
+
+    id = Column(Integer, primary_key=True)
+    created_at = Column(DateTime, nullable=False)
+    accuracy = Column(Double, nullable=False)
+    f1score = Column(Double, nullable=False)
+    recall = Column(Double, nullable=False)
+    kappa = Column(Double, nullable=False)
+    model_score = Column(Double, nullable=False)
+    feature_importances = Column(String, nullable=False)
 
 class CsvImportHistory(Base):
     __tablename__ = 'csv_import_history'

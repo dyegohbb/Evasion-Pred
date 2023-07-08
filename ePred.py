@@ -1,7 +1,7 @@
 import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import StudentData, AnalysisResultHistory
+from models import StudentData, AnalysisResultHistory, TrainingHistory
 import numpy as np
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
@@ -16,6 +16,7 @@ import joblib
 import os
 from datetime import datetime
 from taskDAO import updateProgress, updateSituationToFinished, updateSituationToFailed
+import json
 
 # Configuração do banco de dados
 db_host = 'localhost'
@@ -57,16 +58,19 @@ def trainXGB(X, y, params):
   kappa = cohen_kappa_score(y_true, y_pred)
 
   # Exibe as métricas
+  features_importances = getFeatureImportances(model, X)
   print(f'Acurácia: {acc:.4f}')
   print(f'F1-Score: {f1:.4f}')
   print(f'Recall: {recall:.4f}')
   print(f'Cohen-Kappa: {kappa:.4f}')
   print(f'model_score: {model_score}')
   print(f'model_score: {model_score.mean()}')
-
-  # Exibe as colunas e sua porcentagem de importancia
   print("--------")
-  printFeatureImportances(model, X)
+  print(features_importances)
+
+  features_importances_json = features_importances.to_json(orient='records')
+  saveMetrics(acc, f1, recall, kappa, model_score.mean(), features_importances_json)
+  # Exibe as colunas e sua porcentagem de importancia
   # Obter o diretório do arquivo .py atual
   diretorio_atual = os.path.dirname(os.path.abspath(__file__))
 
@@ -108,7 +112,7 @@ def gridSearchXGB(X, y, param_grid):
   print(f'Melhores parâmetros: {grid_search.best_params_}')
   print(f'Melhor score: {grid_search.best_score_:.4f}')
 
-def printFeatureImportances(model, X):
+def getFeatureImportances(model, X):
   # Obtém a importância de cada coluna
   importance = model.feature_importances_
 
@@ -119,7 +123,7 @@ def printFeatureImportances(model, X):
   feature_importance = feature_importance.sort_values(by='Importance', ascending=False)
 
   # Exibe o resultado
-  print(feature_importance)
+  return feature_importance
 
 def getFeaturesDataFrame():
     # Consulta para recuperar os registros da tabela
@@ -366,6 +370,15 @@ def savePredictions(studentid):
         session.add(analysis_result)
 
     session.commit()
+    session.close()
+
+def saveMetrics(acc, f1, recall, kappa, model_score_mean, features_importances):
+     # Obter a data e hora atual
+    now = datetime.now()
+    metrics = TrainingHistory(created_at=now, accuracy=acc, f1score = f1, recall=recall, kappa=kappa, model_score=model_score_mean, feature_importances=features_importances)
+    session.add(metrics)
+    session.commit()
+    session.close()
 
 def customizedTrain():
     print("Treinamento customizado")
