@@ -270,7 +270,7 @@ def encodingDataWithIndexs(qData):
     qData['descricao_renda_per_capita'] = qData['descricao_renda_per_capita'].astype(int)
     return qData
 
-def fullTrain(taskUUID):
+def fullAnalysis(taskUUID):
 
     try:
         qData = getFeaturesDataFrame()
@@ -310,6 +310,44 @@ def fullTrain(taskUUID):
         # Salvar predições no banco de dados
         savePredictions(studentId)
         updateSituationToFinished(taskUUID)
+        print("Processo finalizado com sucesso!")
+
+    except Exception as e:
+        updateSituationToFailed(taskUUID,e)
+        print("Processo finalizado com ERRO. Verifique o log:")
+        print(e)
+
+    finally:
+        session.close()
+        print("---------------------------------")
+
+def iaTraining(taskUUID):
+    try:
+        qData = getFeaturesDataFrame()
+        updateProgress(taskUUID, 30)
+        qData = removeInvalidStudents(qData)
+        updateProgress(taskUUID, 35)
+        qData = encodingDataWithIndexs(qData)
+        updateProgress(taskUUID, 40)
+
+        # Iniciando separação dos dados para predição
+
+        # Preencher NaN com -1
+        qData['percentual_frequencia'] = qData['percentual_frequencia'].fillna(-1)
+        updateProgress(taskUUID, 45)
+        # Remove os elementos target
+        qData = qData.drop("descricao_situacao_matricula", axis=1)
+        updateProgress(taskUUID, 50)
+
+        # Monta o X e Y responsáveis pelo treinamento
+        X = pd.DataFrame(qData.drop(["target", "studentid"], axis=1), index=qData.index)
+        updateProgress(taskUUID, 55)
+        y = pd.DataFrame(qData["target"], index=qData.index)
+        updateProgress(taskUUID, 65)
+
+        # Treinamento do modelo com os melhores parâmetros
+        params = {'colsample_bytree': 1, 'gamma': 4, 'learning_rate': 0.1, 'max_depth': 5, 'n_estimators': 100, 'subsample': 1, "min_child_weight": 5}
+        trainXGB(X, y, params)
         print("Processo finalizado com sucesso!")
 
     except Exception as e:
