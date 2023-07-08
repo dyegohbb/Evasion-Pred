@@ -53,7 +53,6 @@ def trainXGB(X, y, params):
   acc = accuracy_score(y_true, y_pred)
   f1 = f1_score(y_true, y_pred, average='weighted')
   recall = recall_score(y_true, y_pred, average='weighted')
-  precision = precision_score(y_true, y_pred)
   model_score = cross_val_score(model, X, y, cv=5)
   kappa = cohen_kappa_score(y_true, y_pred)
 
@@ -61,7 +60,6 @@ def trainXGB(X, y, params):
   print(f'Acurácia: {acc:.4f}')
   print(f'F1-Score: {f1:.4f}')
   print(f'Recall: {recall:.4f}')
-  print(f'Precision: {precision:.4f}')
   print(f'Cohen-Kappa: {kappa:.4f}')
   print(f'model_score: {model_score}')
   print(f'model_score: {model_score.mean()}')
