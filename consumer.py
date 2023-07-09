@@ -1,6 +1,6 @@
 from kafka import KafkaConsumer
 from multiprocessing import Process, freeze_support
-from ePred import fullAnalysis, iaTraining
+from ePred import fullAnalysis, iaTraining, fastAnalysis
 from models import TaskOperationEnum
 import json
 import os
@@ -8,7 +8,7 @@ import os
 
 # Configurações do consumidor Kafka
 bootstrap_servers = os.environ.get('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
-topics = ['full_analysis', 'ia_train', 'customized_analysis']
+topics = ['full_analysis', 'fast_analysis', 'ia_train', 'customized_analysis']
 
 def consume_topic(topic):
     consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers)
@@ -22,6 +22,9 @@ def consume_topic(topic):
             if(message.topic == "full_analysis" and operation == TaskOperationEnum.FULL_ANALYSIS):
                 print("Eu consumi uma operação full_analysis e vou executá-la")
                 fullAnalysis(message_object['uuid'])
+            elif(message.topic == "fast_analysis" and operation == TaskOperationEnum.FAST_ANALYSIS):
+                print("Eu consumi uma operação fast_analysis, e vou executá-la")
+                fastAnalysis(message_object['uuid'])
             elif(message.topic == "customized_analysis" and operation == TaskOperationEnum.CUSTOMIZED_ANALYSIS):
                 print("Eu consumi uma operação customized_analysis, mas não sei o que fazer com ela")
             elif(message.topic == "ia_train" and operation == TaskOperationEnum.IA_TRAIN):

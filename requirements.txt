@@ -3,10 +3,7 @@ pandas
 SQLAlchemy
 numpy
 scikit-learn
-tensorflow
-keras
 xgboost
-seaborn
-matplotlib
 joblib
 Flask-Login
+pymysql

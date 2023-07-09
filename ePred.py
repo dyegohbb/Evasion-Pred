@@ -4,14 +4,10 @@ from sqlalchemy.orm import sessionmaker
 from models import StudentData, AnalysisResultHistory, TrainingHistory
 import numpy as np
 from sklearn.model_selection import train_test_split
-import tensorflow as tf
 from sklearn.model_selection import GridSearchCV
-from sklearn import tree
-from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, ConfusionMatrixDisplay, cohen_kappa_score, f1_score, recall_score, roc_curve, auc, precision_score
+from sklearn.metrics import accuracy_score, cohen_kappa_score, f1_score, recall_score
 import xgboost as xgb
 from sklearn.model_selection import KFold, cross_val_score
-import seaborn as sns
-import matplotlib.pyplot as plt
 import joblib
 import os
 from datetime import datetime
@@ -361,6 +357,40 @@ def iaTraining(taskUUID):
     finally:
         session.close()
         print("---------------------------------")
+
+def fastAnalysis(taskUUID):
+    qData = getFeaturesDataFrame()
+    updateProgress(taskUUID, 30)
+    qData = removeInvalidStudents(qData)
+    updateProgress(taskUUID, 35)
+    qData = encodingDataWithIndexs(qData)
+    updateProgress(taskUUID, 40)
+
+    # Iniciando separação dos dados para predição
+
+    # Preencher NaN com -1
+    qData['percentual_frequencia'] = qData['percentual_frequencia'].fillna(-1)
+    updateProgress(taskUUID, 45)
+    # Remove os elementos target
+    qData = qData.drop("descricao_situacao_matricula", axis=1)
+    updateProgress(taskUUID, 50)
+
+    # Monta o X e Y responsáveis pelo treinamento
+    studentId = pd.DataFrame(qData["studentid"], index=qData.index)
+    updateProgress(taskUUID, 55)
+    X = pd.DataFrame(qData.drop(["target", "studentid"], axis=1), index=qData.index)
+    updateProgress(taskUUID, 65)
+    # Predição dos dados para salvar no banco de dados
+    predicoes = predictXGB(X)
+    updateProgress(taskUUID, 80)
+    studentId['evaded'] = pd.Series(predicoes, index=studentId.index)
+    updateProgress(taskUUID, 90)
+    # Salvar predições no banco de dados
+    savePredictions(studentId)
+    updateSituationToFinished(taskUUID)
+    print("Processo finalizado com sucesso!")
+
+
 
 def savePredictions(studentid):
     # Obter a data e hora atual
