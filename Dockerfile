@@ -18,4 +18,4 @@ ENV KAFKA_BOOTSTRAP_SERVERS=localhost:9092 \
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Especifique o comando a ser executado quando o contêiner for iniciado
-CMD [ "python", consumer.py" ]
+CMD [ "python", "consumer.py" ]
