@@ -3,15 +3,16 @@ from multiprocessing import Process, freeze_support
 from ePred import fullAnalysis, iaTraining
 from models import TaskOperationEnum
 import json
+import os
 
 
 # Configurações do consumidor Kafka
-bootstrap_servers = 'localhost:9092'
-topics = ['full_analysis', 'ia_train', 'topic3']
+bootstrap_servers = os.environ.get('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
+topics = ['full_analysis', 'ia_train', 'customized_analysis']
 
 def consume_topic(topic):
     consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers)
-    print("Iniciando consumidor para o tópico: " + topic)
+    print("Consumidor ativo para o tópico: " + topic)
     try:
         for message in consumer:
             message_value = message.value.decode('utf-8')
@@ -19,12 +20,12 @@ def consume_topic(topic):
             operation = message_object['operation']
 
             if(message.topic == "full_analysis" and operation == TaskOperationEnum.FULL_ANALYSIS):
-                print("Eu consumi uma operação full_analysis")
+                print("Eu consumi uma operação full_analysis e vou executá-la")
                 fullAnalysis(message_object['uuid'])
             elif(message.topic == "customized_analysis" and operation == TaskOperationEnum.CUSTOMIZED_ANALYSIS):
-                print("Eu consumi uma operação customized_analysis")
+                print("Eu consumi uma operação customized_analysis, mas não sei o que fazer com ela")
             elif(message.topic == "ia_train" and operation == TaskOperationEnum.IA_TRAIN):
-                print("Eu consumi uma operação ia_train")
+                print("Eu consumi uma operação ia_train e vou executá-la")
                 iaTraining(message_object['uuid'])
             else:
                 print(f"Operação não reconhecida {message.topic}: {message_object}")

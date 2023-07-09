@@ -19,13 +19,14 @@ from taskDAO import updateProgress, updateSituationToFinished, updateSituationTo
 import json
 
 # Configuração do banco de dados
-db_host = 'localhost'
-db_port = '3306'
-db_name = 'evasionwatch'
-db_username = 'root'
-db_password = 'QweBHU*'
+db_username = os.environ.get('DB_USERNAME', 'root')
+db_password = os.environ.get('DB_PASSWORD', 'QweBHU*')
+db_host = os.environ.get('DB_HOST', 'localhost')
+db_port = os.environ.get('DB_PORT', '3306')
+db_name = os.environ.get('DB_NAME', 'evasionwatch')
 
 db_url = f'mysql+pymysql://{db_username}:{db_password}@{db_host}:{db_port}/{db_name}'
+
 engine = create_engine(db_url)
 Session = sessionmaker(bind=engine)
 session = Session()
