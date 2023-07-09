@@ -12,7 +12,7 @@ ENV KAFKA_BOOTSTRAP_SERVERS=localhost:9092 \
     DB_PASSWORD=QweBHU* \
     DB_HOST=localhost \
     DB_PORT=3306 \
-    DB_NAME=evasionwatch \
+    DB_NAME=evasionwatch
 
 # Instale as dependências do Python
 RUN pip install --no-cache-dir -r requirements.txt
