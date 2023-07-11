@@ -13,6 +13,10 @@ import os
 from datetime import datetime
 from taskDAO import updateProgress, updateSituationToFinished, updateSituationToFailed
 import json
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Configuração do banco de dados
 db_username = os.environ.get('DB_USERNAME', 'root')
@@ -36,15 +40,17 @@ colunas = ["studentid","descricao_modalidade_curso", "descricao_cota", "nivel_en
 
 def trainXGB(X, y, params):
   # Define o modelo XGBoost
+  logger.info("Iniciando treinamento do modelo XGBoost")
   model = xgb.XGBClassifier(objective='binary:logistic', random_state=42, **params)
 
   X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
   # Treina o modelo usando o conjunto de treino
-
+  logger.info("Treinando o modelo XGBoost")
   model.fit(X_train, y_train)
 
   # Faz previsões usando o conjunto de teste
+  logger.info("Fazendo previsões usando o conjunto de teste")
   y_pred = model.predict(X_test)
   y_true = y_test
       
@@ -56,16 +62,17 @@ def trainXGB(X, y, params):
 
   # Exibe as métricas
   features_importances = getFeatureImportances(model, X)
-  print(f'Acurácia: {acc:.4f}')
-  print(f'F1-Score: {f1:.4f}')
-  print(f'Recall: {recall:.4f}')
-  print(f'Cohen-Kappa: {kappa:.4f}')
-  print(f'model_score: {model_score}')
-  print(f'model_score: {model_score.mean()}')
-  print("--------")
-  print(features_importances)
+  logger.info(f'Acurácia: {acc:.4f}')
+  logger.info(f'F1-Score: {f1:.4f}')
+  logger.info(f'Recall: {recall:.4f}')
+  logger.info(f'Cohen-Kappa: {kappa:.4f}')
+  logger.info(f'model_score: {model_score}')
+  logger.info(f'model_score: {model_score.mean()}')
+  logger.info("--------")
+  logger.info(features_importances)
 
   features_importances_json = features_importances.to_json(orient='records')
+  logger.info("Salvando métricas")
   saveMetrics(acc, f1, recall, kappa, model_score.mean(), features_importances_json)
   # Exibe as colunas e sua porcentagem de importancia
   # Obter o diretório do arquivo .py atual
@@ -106,8 +113,8 @@ def gridSearchXGB(X, y, param_grid):
   grid_search.fit(X, y)
 
   # Exibe os melhores parâmetros e score
-  print(f'Melhores parâmetros: {grid_search.best_params_}')
-  print(f'Melhor score: {grid_search.best_score_:.4f}')
+  logger.info(f'Melhores parâmetros: {grid_search.best_params_}')
+  logger.info(f'Melhor score: {grid_search.best_score_:.4f}')
 
 def getFeatureImportances(model, X):
   # Obtém a importância de cada coluna
@@ -309,54 +316,63 @@ def fullAnalysis(taskUUID):
         # Salvar predições no banco de dados
         savePredictions(studentId)
         updateSituationToFinished(taskUUID)
-        print("Processo finalizado com sucesso!")
+        logger.info("Processo finalizado com sucesso!")
 
     except Exception as e:
         updateSituationToFailed(taskUUID,e)
-        print("Processo finalizado com ERRO. Verifique o log:")
-        print(e)
+        logger.info("Processo finalizado com ERRO. Verifique o log:")
+        logger.info(e)
 
     finally:
         session.close()
-        print("---------------------------------")
+        logger.info("---------------------------------")
 
 def iaTraining(taskUUID):
     try:
+        logger.info("Iniciando preparação de dados para treinamento")
         qData = getFeaturesDataFrame()
+        logger.info("30")
         updateProgress(taskUUID, 30)
         qData = removeInvalidStudents(qData)
+        logger.info("35")
         updateProgress(taskUUID, 35)
         qData = encodingDataWithIndexs(qData)
+        logger.info("40")
         updateProgress(taskUUID, 40)
 
         # Iniciando separação dos dados para predição
 
         # Preencher NaN com -1
         qData['percentual_frequencia'] = qData['percentual_frequencia'].fillna(-1)
+        logger.info("45")
         updateProgress(taskUUID, 45)
         # Remove os elementos target
         qData = qData.drop("descricao_situacao_matricula", axis=1)
+        logger.info("50")
         updateProgress(taskUUID, 50)
 
         # Monta o X e Y responsáveis pelo treinamento
         X = pd.DataFrame(qData.drop(["target", "studentid"], axis=1), index=qData.index)
+        logger.info("55")
         updateProgress(taskUUID, 55)
         y = pd.DataFrame(qData["target"], index=qData.index)
+        logger.info("65")
         updateProgress(taskUUID, 65)
 
         # Treinamento do modelo com os melhores parâmetros
         params = {'colsample_bytree': 1, 'gamma': 4, 'learning_rate': 0.1, 'max_depth': 5, 'n_estimators': 100, 'subsample': 1, "min_child_weight": 5}
         trainXGB(X, y, params)
-        print("Processo finalizado com sucesso!")
+        logger.info("Processo finalizado com sucesso!")
 
     except Exception as e:
         updateSituationToFailed(taskUUID,e)
-        print("Processo finalizado com ERRO. Verifique o log:")
-        print(e)
+        logger.info("Processo finalizado com ERRO. Verifique o log:")
+        logger.info(e)
 
     finally:
+        updateSituationToFinished(taskUUID)
         session.close()
-        print("---------------------------------")
+        logger.info("---------------------------------")
 
 def fastAnalysis(taskUUID):
     qData = getFeaturesDataFrame()
@@ -388,7 +404,7 @@ def fastAnalysis(taskUUID):
     # Salvar predições no banco de dados
     savePredictions(studentId)
     updateSituationToFinished(taskUUID)
-    print("Processo finalizado com sucesso!")
+    logger.info("Processo finalizado com sucesso!")
 
 
 
@@ -412,4 +428,4 @@ def saveMetrics(acc, f1, recall, kappa, model_score_mean, features_importances):
     session.close()
 
 def customizedTrain():
-    print("Treinamento customizado")
+    logger.info("Treinamento customizado")
